@@ -1,0 +1,233 @@
+// -----------------------------------------------------------------
+// tetris.brik
+// Un juego de Tetris implementado en el lenguaje "Brik"
+// -----------------------------------------------------------------
+
+// --- 1. Clases y Definiciones ---
+class Constantes {
+    let VACIO = 0;
+    let PIEZA = 1;      // Bloque cayendo (Pieza actual)
+    let FIJO = 2;       // Bloque acumulado (Suelo/Ladrillo)
+
+    let ALTO = 20;
+    let ANCHO = 10;
+
+    // Direcciones [y, x]
+    let ABAJO = [1, 0];
+    let IZQUIERDA = [0, -1];
+    let DERECHA = [0, 1];
+}
+
+// --- 2. Piezas y Rotaciones Simplificadas ---
+let formas = [
+    // Forma Cuadrado (O)
+    [[1, 1],
+     [1, 1]],
+     
+    // Forma T (simplificada)
+    [[0, 1, 0],
+     [1, 1, 1],
+     [0, 0, 0]],
+
+    // Forma I (simplificada)
+    [[1],
+     [1],
+     [1],
+     [1]]
+];
+
+// --- Funcion para crear una pantalla vacia ---
+def crearPantalla(alto, ancho, vacio) {
+    let pantalla = [];
+    let y = 0;
+    while (y < alto) {
+        let fila = [];
+        let x = 0;
+        while (x < ancho) {
+            push_front(fila, vacio);
+            x = x + 1;
+        }
+        push_front(pantalla, fila);
+        y = y + 1;
+    }
+    return pantalla;
+}
+
+// --- Funcion para comprobar colisiones ---
+// Retorna true si la nueva posicion choca con limites o bloques fijo
+def colision(nueva_y, nueva_x, pieza, pantalla_juego, constantes) {
+    let py = 0;
+    while(py < len(pieza)) {
+        let px = 0;
+        while(px < len(pieza[0])) {
+            if (pieza[py][px] == 1) { // Solo si el píxel es parte de la pieza
+                let target_y = nueva_y + py;
+                let target_x = nueva_x + px;
+
+                // 1. Colisión con Paredes y Suelo (límites)
+                if (target_x < 0 || target_x >= constantes.ANCHO || target_y >= constantes.ALTO) {
+                    return true;
+                }
+                
+                // 2. Colisión con Bloques Fijos (FIJO = 2)
+                // Chequeamos solo si target_y está dentro del límite ALTO
+                if (target_y >= 0) {
+                    if (pantalla_juego[target_y][target_x] == constantes.FIJO) {
+                        return true;
+                    }
+                }
+            }
+            px = px + 1;
+        }
+        py = py + 1;
+    }
+    return false; // No hay colisión
+}
+
+
+// --- 3. Estado del Juego (Variables Globales) ---
+let constantes = new Constantes;
+let gameOver = false;
+let score = 0;
+let velocidad = 500; // Gravedad: 500ms por caida
+let acumulador_tiempo = 0;
+
+let pantalla_juego = crearPantalla(constantes.ALTO, constantes.ANCHO, constantes.VACIO);
+let pieza_actual = formas[rand(0, 2)];
+let pieza_y = 0;
+let pieza_x = 4; // Comienza en el centro
+
+
+// -----------------------------------------------------------------
+// --- 4. El Bucle Principal del Juego ---
+// -----------------------------------------------------------------
+
+print("--- Iniciando Tetris (a/d para mover, s para caer rapido) ---");
+sleep(1000);
+
+while (gameOver == false) {
+
+    // --- 4a. Manejar Input (Movimiento Horizontal Rápido) ---
+    let tecla = get_key();
+    
+    let nuevo_x = pieza_x;
+    let nuevo_y = pieza_y;
+    
+    // Calcula la nueva posición según la tecla
+    if (tecla == "a") { nuevo_x = pieza_x + constantes.IZQUIERDA[1]; }
+    if (tecla == "d") { nuevo_x = pieza_x + constantes.DERECHA[1]; }
+    if (tecla == "s") { nuevo_y = pieza_y + constantes.ABAJO[0]; } // Caída instantánea
+
+
+    // COMPROBACIÓN DE COLISIÓN (Movimiento Horizontal/Caída Rápida)
+    if (colision(nuevo_y, nuevo_x, pieza_actual, pantalla_juego, constantes) == false) {
+        // Si no hay colisión, acepta la nueva posición
+        pieza_x = nuevo_x;
+        pieza_y = nuevo_y;
+    }
+
+
+    // --- 4b. Gravedad (Caída por tiempo) ---
+    let debe_fijarse = false;
+    
+    acumulador_tiempo = acumulador_tiempo + 100; // Tick de 100ms
+    if (acumulador_tiempo >= velocidad) {
+        let siguiente_y = pieza_y + constantes.ABAJO[0];
+
+        if (colision(siguiente_y, pieza_x, pieza_actual, pantalla_juego, constantes)) {
+            // COLISIÓN: Hay que fijar la pieza en la posición actual.
+            debe_fijarse = true;
+        } else {
+            // NO COLISIÓN: La pieza cae un paso.
+            pieza_y = siguiente_y; 
+        }
+        acumulador_tiempo = 0;
+    }
+
+
+    // -------------------------------------------------------------------
+    // --- 4c. Lógica de Fijación y Spawn ---
+    // -------------------------------------------------------------------
+    if (debe_fijarse == true) { 
+        
+        // 1. FIJAR LA PIEZA ACTUAL
+        let py = 0;
+        while(py < len(pieza_actual)) {
+            let px = 0;
+            while(px < len(pieza_actual[0])) {
+                if (pieza_actual[py][px] == 1) {
+                    let target_y = pieza_y + py; // Se fija en la última posición válida
+                    let target_x = pieza_x + px;
+                    
+                    if (target_y >= 0 && target_y < constantes.ALTO && target_x >= 0 && target_x < constantes.ANCHO) {
+                        pantalla_juego[target_y][target_x] = constantes.FIJO;
+                    }
+                }
+                px = px + 1;
+            }
+            py = py + 1;
+        }
+
+        // 2. Comprobar GAME OVER
+        if (pieza_y <= 1) { 
+            gameOver = true;
+        }
+
+        // 3. Spawnear la siguiente pieza
+        score = score + 1; 
+        pieza_actual = formas[rand(0, 2)];
+        pieza_y = 0;
+        pieza_x = 4;
+        
+        // Verificar GAME OVER Inmediato (si la nueva pieza colisiona al spawnear)
+        if (colision(pieza_y, pieza_x, pieza_actual, pantalla_juego, constantes)) {
+             gameOver = true;
+        }
+    }
+
+
+    // --- 4d. Dibujar el estado actual (PREPARACIÓN) ---
+
+    // 1. Crear nueva_pantalla copiando los bloques fijod
+    let nueva_pantalla = crearPantalla(constantes.ALTO, constantes.ANCHO, constantes.VACIO);
+    let y_temp = 0;
+    while(y_temp < constantes.ALTO) {
+        let x_temp = 0;
+        while(x_temp < constantes.ANCHO) {
+            nueva_pantalla[y_temp][x_temp] = pantalla_juego[y_temp][x_temp]; 
+            x_temp = x_temp + 1;
+        }
+        y_temp = y_temp + 1;
+    }
+
+    // 2. Poner la pieza_actual en la nueva_pantalla (la que se está moviendo)
+    let py = 0;
+    while(py < len(pieza_actual)) {
+        let px = 0;
+        while(px < len(pieza_actual[0])) {
+            if (pieza_actual[py][px] == 1) {
+                let target_y = pieza_y + py;
+                let target_x = pieza_x + px;
+                
+                if (target_y >= 0 && target_y < constantes.ALTO && target_x >= 0 && target_x < constantes.ANCHO) {
+                    // Solo dibuja si el lugar está vacío. Esto es crucial.
+                    if (nueva_pantalla[target_y][target_x] == constantes.VACIO) {
+                        nueva_pantalla[target_y][target_x] = constantes.PIEZA;
+                    }
+                }
+            }
+            px = px + 1;
+        }
+        py = py + 1;
+    }
+
+
+    // 3. Llama al Motor Gráfico Nativo (draw_grid)
+    draw_grid(nueva_pantalla, constantes, score);
+
+    // --- 4e. Pausar el juego ---
+    sleep(100); // 100ms = 10 FPS
+}
+
+print("--- GAME OVER ---");
+print("Puntuacion Final: " + score);

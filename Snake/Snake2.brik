@@ -1,0 +1,132 @@
+# ===============================
+# SNAKE — CLASICO CON POWERUPS
+# ===============================
+
+# ==================================
+# PARAMETROS GENERALES DEL JUEGO
+# ==================================
+nombre_juego = "Snake Clasico con PowerUps"
+version = "1.0"
+
+# Dimensiones del tablero: ancho y alto
+dimensiones_tablero = [24,24]
+
+
+# Velocidad base de la serpiente (bloques por segundo)
+velocidad_inicial = 6
+
+# ==================================
+# REGLAS DEL JUEGO
+# ==================================
+
+# Reglas de puntuacion/comida
+regla_puntuacion = {
+    evento = "comida_normal"
+    accion = "sumar_puntos"
+    puntuacion_base = 10
+}
+
+# Reglas de aparicion de comida
+regla_aparicion_comida = {
+    despawn_comida_segundos = 10
+}
+
+# Colisiones y bordes
+regla_colisiones = {
+    choque_con_pared = "fin_juego"
+    choque_con_cola  = "fin_juego"
+    atravesar_bordes = "no"
+}
+
+# Aumento de velocidad por puntos
+regla_velocidad = {
+    aumento_por_puntos = 40
+    incremento = 0.5
+    max_velocidad = 18
+}
+
+# Obstaculos en el tablero
+regla_obstaculos = {
+    activos = "si"
+    cantidad = 24
+    evitar_spawn = "si"
+    zona_segura_radio = 2
+}
+
+# Regla de finalizacion del juego
+regla_fin_juego = {
+    condicion = "colision"
+}
+
+# ==================================
+# CONTROLES DEL JUEGO
+# ==================================
+controles = {
+    mover_izquierda = "a"
+    mover_derecha   = "d"
+    mover_arriba    = "w"
+    mover_abajo     = "s"
+    pausar          = "p"
+    reiniciar       = "r"
+}
+
+# ==================================
+# DEFINICIONES DEL JUEGO
+# ==================================
+
+# Skin de la serpiente
+serpiente_basica = {
+    color = "verde"
+    longitud_inicial = 3
+    direccion_inicial = [1, 0]
+    spawn_inicial = [12, 12]
+}
+
+# Comida normal
+comida_normal = {
+    id = "comida"
+    puntos = 10
+    crecimiento = 1
+    color = "rojo"
+    tiempo_vida_segundos = 10
+}
+
+# Power-up: ralentiza temporalmente (congeladora)
+mosca_congeladora = {
+    tipo = "slow"
+    probabilidad = 0.08
+    factor_velocidad = 0.5
+    duracion_segundos = 8
+    color = "celeste"
+}
+
+# Power-up: atraviesa paredes y cola
+mosca_fantasma = {
+    tipo = "ghost"
+    probabilidad = 0.05
+    duracion_segundos = 8
+    efecto_colisiones = {
+        paredes = "atravesar"
+        cola = "atravesar"
+    }
+    color = "morado"
+}
+
+# Power-up: puntos extra sin crecer
+moneda_oro = {
+    tipo = "score"
+    probabilidad = 0.07
+    puntos = 50
+    crecimiento = 0
+    tiempo_vida_segundos = 7
+    
+    preferencia_spawn = {
+        dificultad = "alta"
+        cerca_de_pared = "si"
+        evitar_centro = "si"
+    }
+    color = "dorado"
+}
+
+# Lista de elementos que el juego puede usar (referencias)
+items_disponibles = [comida_normal, mosca_congeladora, mosca_fantasma, moneda_oro]
